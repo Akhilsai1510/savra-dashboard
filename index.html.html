@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Savra — Teacher Insights Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: rgba(255,255,255,0.07);
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --accent3: #f9a8d4;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --lesson: #6ee7b7;
+    --quiz: #818cf8;
+    --assessment: #f9a8d4;
+    --qp: #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    letter-spacing: -0.5px;
+    padding: 0 24px 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 24px 12px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 24px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 400;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(110,231,183,0.06); }
+
+  .nav-icon { font-size: 16px; opacity: 0.9; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .admin-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  /* Main */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    padding: 36px 40px;
+    max-width: calc(100vw - 240px);
+    animation: fadeIn 0.5s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Header */
+  .topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .page-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .time-tabs {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .time-tab {
+    padding: 8px 18px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.2s;
+    border: none;
+    background: none;
+  }
+  .time-tab.active {
+    background: var(--accent);
+    color: #0a0c10;
+    font-weight: 600;
+  }
+  .time-tab:hover:not(.active) { color: var(--text); }
+
+  /* Stats row */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.13); }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    filter: blur(30px);
+    opacity: 0.25;
+  }
+  .stat-card.c1::after { background: var(--accent); }
+  .stat-card.c2::after { background: var(--accent2); }
+  .stat-card.c3::after { background: var(--assessment); }
+  .stat-card.c4::after { background: var(--qp); }
+
+  .stat-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
+  .stat-value { font-size: 2.4rem; font-family: 'DM Serif Display', serif; line-height: 1; }
+  .stat-card.c1 .stat-value { color: var(--accent); }
+  .stat-card.c2 .stat-value { color: var(--accent2); }
+  .stat-card.c3 .stat-value { color: var(--assessment); }
+  .stat-card.c4 .stat-value { color: var(--qp); }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* Content grid */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .card-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+
+  /* Chart area */
+  .chart-wrap { position: relative; height: 200px; }
+  canvas { display: block; }
+
+  /* Teacher selector */
+  .selector-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 200px;
+  }
+  select:focus { border-color: var(--accent); }
+
+  /* Teacher list */
+  .teacher-list { display: flex; flex-direction: column; gap: 10px; }
+  .teacher-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-radius: 12px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .teacher-row:hover, .teacher-row.selected { border-color: var(--accent); background: rgba(110,231,183,0.05); }
+  .teacher-av {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #0a0c10;
+    flex-shrink: 0;
+  }
+  .teacher-info { flex: 1; min-width: 0; }
+  .teacher-name { font-size: 13px; font-weight: 500; }
+  .teacher-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .teacher-badge { font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+
+  /* Bar chart manual */
+  .bar-group { display: flex; flex-direction: column; gap: 10px; }
+  .bar-item { display: flex; flex-direction: column; gap: 4px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 12px; }
+  .bar-label span:first-child { color: var(--muted); }
+  .bar-label span:last-child { font-weight: 600; font-size: 12px; }
+  .bar-bg { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+
+  /* Per-teacher detail */
+  .detail-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 18px; }
+  .mini-stat {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .mini-stat .val { font-size: 1.6rem; font-family: 'DM Serif Display', serif; }
+  .mini-stat .lab { font-size: 10px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+  /* Activity log */
+  .activity-log { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
+  .activity-log::-webkit-scrollbar { width: 4px; }
+  .activity-log::-webkit-scrollbar-track { background: transparent; }
+  .activity-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .log-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border-radius: 10px;
+    font-size: 12px;
+  }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .log-info { flex: 1; min-width: 0; }
+  .log-type { font-weight: 500; }
+  .log-meta { color: var(--muted); font-size: 11px; margin-top: 1px; }
+  .log-date { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+  /* Insight chips */
+  .insight-list { display: flex; flex-direction: column; gap: 10px; }
+  .insight-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 12.5px; line-height: 1.5;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border-left: 3px solid;
+  }
+  .insight-item.green { border-left-color: var(--accent); }
+  .insight-item.purple { border-left-color: var(--accent2); }
+  .insight-item.pink { border-left-color: var(--assessment); }
+  .insight-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Legend */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+  .leg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+    .content-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Scrollbar global */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">SAVRA</div>
+  <div class="nav-label">Menu</div>
+  <div class="nav-item active"><span class="nav-icon">◈</span> Dashboard</div>
+  <div class="nav-item"><span class="nav-icon">⊹</span> Teachers</div>
+  <div class="nav-item"><span class="nav-icon">▦</span> Classrooms</div>
+  <div class="nav-item"><span class="nav-icon">⬡</span> Reports</div>
+  <div class="sidebar-footer">
+    <div class="admin-chip">
+      <div class="avatar">SR</div>
+      <div>
+        <div style="font-size:12px;font-weight:500">Admin</div>
+        <div style="font-size:11px;color:var(--muted)">Principal</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <!-- Header -->
+  <div class="topbar">
+    <div>
+      <div class="page-title">Insights</div>
+      <div class="page-sub">See what's happening across your school</div>
+    </div>
+    <div class="time-tabs">
+      <button class="time-tab active" onclick="setTimeFilter('week',this)">This Week</button>
+      <button class="time-tab" onclick="setTimeFilter('month',this)">This Month</button>
+      <button class="time-tab" onclick="setTimeFilter('all',this)">All Time</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card c1">
+      <div class="stat-label">Lesson Plans</div>
+      <div class="stat-value" id="stat-lessons">—</div>
+      <div class="stat-sub">Created</div>
+    </div>
+    <div class="stat-card c2">
+      <div class="stat-label">Quizzes</div>
+      <div class="stat-value" id="stat-quizzes">—</div>
+      <div class="stat-sub">Conducted</div>
+    </div>
+    <div class="stat-card c3">
+      <div class="stat-label">Assessments</div>
+      <div class="stat-value" id="stat-assessments">—</div>
+      <div class="stat-sub">Assigned</div>
+    </div>
+    <div class="stat-card c4">
+      <div class="stat-label">Question Papers</div>
+      <div class="stat-value" id="stat-qp">—</div>
+      <div class="stat-sub">Generated</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="content-grid">
+    <!-- Weekly activity chart -->
+    <div class="card">
+      <div class="card-title">Weekly Activity</div>
+      <div class="card-sub" id="chart-sub">Content creation trends</div>
+      <div class="chart-wrap">
+        <canvas id="activityChart"></canvas>
+      </div>
+      <div class="legend" id="chart-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--lesson)"></div> Lesson Plans</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--quiz)"></div> Quizzes</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--assessment)"></div> Assessments</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--qp)"></div> Question Papers</div>
+      </div>
+    </div>
+
+    <!-- Teacher quick list -->
+    <div class="card">
+      <div class="card-title">Teachers</div>
+      <div class="card-sub">Activity overview</div>
+      <div class="teacher-list" id="teacherList"></div>
+    </div>
+  </div>
+
+  <!-- Per-teacher analysis -->
+  <div class="content-grid" style="grid-template-columns: 1fr 1fr;">
+    <!-- Teacher detail -->
+    <div class="card">
+      <div class="selector-row">
+        <div>
+          <div class="card-title" id="selected-name">All Teachers</div>
+          <div class="card-sub" id="selected-meta">Aggregate view</div>
+        </div>
+        <select id="teacherSelect" onchange="selectTeacher(this.value)">
+          <option value="all">All Teachers</option>
+        </select>
+      </div>
+      <div class="detail-grid" id="detailStats"></div>
+      <div class="card-title" style="margin-bottom:12px;font-size:13px;">Recent Activity</div>
+      <div class="activity-log" id="activityLog"></div>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="card">
+      <div class="card-title">AI Pulse Summary</div>
+      <div class="card-sub">Real-time insights from your data</div>
+      <div class="insight-list" id="insightList"></div>
+
+      <!-- Subject breakdown bars -->
+      <div style="margin-top:20px;">
+        <div class="card-title" style="font-size:13px;margin-bottom:14px;">Activity by Subject</div>
+        <div class="bar-group" id="subjectBars"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ───── RAW DATA (from Excel) ─────
+const rawData = [
+  {teacher_id:'T004',teacher_name:'Vikas Nair',grade:10,subject:'Social Studies',activity_type:'Quiz',created_at:'2026-02-12 19:07:41'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:7,subject:'English',activity_type:'Question Paper',created_at:'2026-02-13 15:31:51'},
+  {teacher_id:'T004',teacher_name:'Vikas Nair',grade:10,subject:'Social Studies',activity_type:'Lesson Plan',created_at:'2026-02-11 19:15:55'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:7,subject:'Mathematics',activity_type:'Lesson Plan',created_at:'2026-02-17 20:35:33'},
+  {teacher_id:'T004',teacher_name:'Vikas Nair',grade:9,subject:'Social Studies',activity_type:'Question Paper',created_at:'2026-02-15 16:51:32'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:6,subject:'English',activity_type:'Quiz',created_at:'2026-02-14 15:22:29'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:10,subject:'Mathematics',activity_type:'Quiz',created_at:'2026-02-12 12:26:22'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:9,subject:'Science',activity_type:'Quiz',created_at:'2026-02-17 09:21:32'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:9,subject:'Science',activity_type:'Question Paper',created_at:'2026-02-12 11:38:24'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:6,subject:'English',activity_type:'Question Paper',created_at:'2026-02-17 19:07:47'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:10,subject:'Mathematics',activity_type:'Lesson Plan',created_at:'2026-02-11 17:53:57'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:8,subject:'Mathematics',activity_type:'Question Paper',created_at:'2026-02-16 11:26:52'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:7,subject:'English',activity_type:'Lesson Plan',created_at:'2026-02-16 15:41:50'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:10,subject:'Mathematics',activity_type:'Question Paper',created_at:'2026-02-11 17:54:16'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:8,subject:'Mathematics',activity_type:'Lesson Plan',created_at:'2026-02-17 19:19:56'},
+  {teacher_id:'T004',teacher_name:'Vikas Nair',grade:9,subject:'Social Studies',activity_type:'Quiz',created_at:'2026-02-16 19:12:33'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:8,subject:'Mathematics',activity_type:'Question Paper',created_at:'2026-02-13 09:16:06'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:6,subject:'English',activity_type:'Quiz',created_at:'2026-02-15 11:36:03'},
+  {teacher_id:'T004',teacher_name:'Vikas Nair',grade:9,subject:'Social Studies',activity_type:'Lesson Plan',created_at:'2026-02-11 13:06:29'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:10,subject:'Mathematics',activity_type:'Quiz',created_at:'2026-02-15 13:31:42'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:8,subject:'Mathematics',activity_type:'Question Paper',created_at:'2026-02-16 11:44:31'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:8,subject:'Mathematics',activity_type:'Lesson Plan',created_at:'2026-02-18 18:45:43'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:10,subject:'Mathematics',activity_type:'Question Paper',created_at:'2026-02-12 19:19:44'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:8,subject:'Science',activity_type:'Quiz',created_at:'2026-02-14 13:57:07'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:8,subject:'Science',activity_type:'Question Paper',created_at:'2026-02-12 18:01:59'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:7,subject:'Mathematics',activity_type:'Question Paper',created_at:'2026-02-14 10:36:09'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:8,subject:'Mathematics',activity_type:'Lesson Plan',created_at:'2026-02-18 16:32:47'},
+  {teacher_id:'T004',teacher_name:'Vikas Nair',grade:10,subject:'Social Studies',activity_type:'Quiz',created_at:'2026-02-15 15:59:00'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:8,subject:'Science',activity_type:'Lesson Plan',created_at:'2026-02-15 13:31:36'},
+  {teacher_id:'T004',teacher_name:'Vikas Nair',grade:9,subject:'Social Studies',activity_type:'Lesson Plan',created_at:'2026-02-15 16:32:23'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:6,subject:'English',activity_type:'Question Paper',created_at:'2026-02-18 09:12:05'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:9,subject:'Mathematics',activity_type:'Lesson Plan',created_at:'2026-02-18 16:26:04'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:9,subject:'Mathematics',activity_type:'Lesson Plan',created_at:'2026-02-16 17:14:47'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:6,subject:'English',activity_type:'Question Paper',created_at:'2026-02-12 17:47:58'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:10,subject:'Mathematics',activity_type:'Quiz',created_at:'2026-02-18 14:05:20'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:8,subject:'Science',activity_type:'Quiz',created_at:'2026-02-14 09:54:01'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:9,subject:'Science',activity_type:'Lesson Plan',created_at:'2026-02-12 18:27:09'},
+  {teacher_id:'T001',teacher_name:'Anita Sharma',grade:8,subject:'Mathematics',activity_type:'Quiz',created_at:'2026-02-14 15:43:38'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:8,subject:'Science',activity_type:'Lesson Plan',created_at:'2026-02-18 15:48:08'},
+  {teacher_id:'T002',teacher_name:'Rahul Verma',grade:9,subject:'Science',activity_type:'Lesson Plan',created_at:'2026-02-16 13:31:34'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:6,subject:'English',activity_type:'Lesson Plan',created_at:'2026-02-14 19:49:54'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:10,subject:'Mathematics',activity_type:'Quiz',created_at:'2026-02-14 11:55:18'},
+  {teacher_id:'T003',teacher_name:'Pooja Mehta',grade:6,subject:'English',activity_type:'Lesson Plan',created_at:'2026-02-16 15:33:27'},
+  {teacher_id:'T005',teacher_name:'Neha Kapoor',grade:9,subject:'Mathematics',activity_type:'Lesson Plan',created_at:'2026-02-18 11:51:37'},
+];
+
+// ───── DEDUPLICATION ─────
+function dedupeData(data) {
+  const seen = new Set();
+  return data.filter(r => {
+    const key = `${r.teacher_id}|${r.activity_type}|${r.created_at}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+const data = dedupeData(rawData);
+
+// ───── HELPERS ─────
+const typeColor = { 'Lesson Plan': '#6ee7b7', 'Quiz': '#818cf8', 'Assessment': '#f9a8d4', 'Question Paper': '#fbbf24' };
+const teacherColors = ['#6ee7b7','#818cf8','#f9a8d4','#fbbf24','#38bdf8'];
+
+function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase(); }
+
+let currentFilter = 'week';
+let currentTeacher = 'all';
+
+// Current week: Feb 11-18 2026 (most of data is here)
+const refDate = new Date('2026-02-18T23:59:59');
+
+function getFilteredData(filter, teacherId='all') {
+  let d = [...data];
+  if (teacherId !== 'all') d = d.filter(r => r.teacher_id === teacherId);
+
+  if (filter === 'week') {
+    const weekAgo = new Date(refDate);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    d = d.filter(r => new Date(r.created_at) >= weekAgo);
+  } else if (filter === 'month') {
+    const monthAgo = new Date(refDate);
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    d = d.filter(r => new Date(r.created_at) >= monthAgo);
+  }
+  return d;
+}
+
+// ───── STATS ─────
+function updateStats() {
+  const d = getFilteredData(currentFilter);
+  document.getElementById('stat-lessons').textContent = d.filter(r=>r.activity_type==='Lesson Plan').length;
+  document.getElementById('stat-quizzes').textContent = d.filter(r=>r.activity_type==='Quiz').length;
+  document.getElementById('stat-assessments').textContent = d.filter(r=>r.activity_type==='Assessment').length;
+  document.getElementById('stat-qp').textContent = d.filter(r=>r.activity_type==='Question Paper').length;
+}
+
+// ───── TEACHER LIST ─────
+function updateTeacherList() {
+  const d = getFilteredData(currentFilter);
+  const teachers = {};
+  d.forEach(r => {
+    if (!teachers[r.teacher_id]) teachers[r.teacher_id] = { name: r.teacher_name, count: 0, id: r.teacher_id };
+    teachers[r.teacher_id].count++;
+  });
+
+  const sorted = Object.values(teachers).sort((a,b)=>b.count-a.count);
+  const list = document.getElementById('teacherList');
+  list.innerHTML = sorted.map((t,i) => `
+    <div class="teacher-row ${currentTeacher===t.id?'selected':''}" onclick="selectTeacher('${t.id}')">
+      <div class="teacher-av" style="background:${teacherColors[i%teacherColors.length]}">${initials(t.name)}</div>
+      <div class="teacher-info">
+        <div class="teacher-name">${t.name}</div>
+        <div class="teacher-meta">${t.id} · Grade ${[...new Set(data.filter(r=>r.teacher_id===t.id).map(r=>r.grade))].join(', ')}</div>
+      </div>
+      <div class="teacher-badge">${t.count}</div>
+    </div>
+  `).join('');
+
+  // Populate select dropdown
+  const sel = document.getElementById('teacherSelect');
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="all">All Teachers</option>' +
+    sorted.map(t=>`<option value="${t.id}" ${t.id===currentTeacher?'selected':''}>${t.name}</option>`).join('');
+  sel.value = currentTeacher;
+}
+
+// ───── TEACHER DETAIL ─────
+function updateTeacherDetail() {
+  const d = getFilteredData(currentFilter, currentTeacher);
+  const lessons = d.filter(r=>r.activity_type==='Lesson Plan').length;
+  const quizzes = d.filter(r=>r.activity_type==='Quiz').length;
+  const assessments = d.filter(r=>r.activity_type==='Assessment').length;
+  const qp = d.filter(r=>r.activity_type==='Question Paper').length;
+  const total = d.length;
+
+  document.getElementById('detailStats').innerHTML = `
+    <div class="mini-stat"><div class="val" style="color:var(--lesson)">${lessons}</div><div class="lab">Lessons</div></div>
+    <div class="mini-stat"><div class="val" style="color:var(--quiz)">${quizzes}</div><div class="lab">Quizzes</div></div>
+    <div class="mini-stat"><div class="val" style="color:var(--qp)">${qp}</div><div class="lab">Q. Papers</div></div>
+  `;
+
+  // Activity log - last 10 sorted desc
+  const sorted = [...d].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,10);
+  document.getElementById('activityLog').innerHTML = sorted.length ? sorted.map(r => `
+    <div class="log-item">
+      <div class="log-dot" style="background:${typeColor[r.activity_type]||'#6b7280'}"></div>
+      <div class="log-info">
+        <div class="log-type">${r.activity_type}</div>
+        <div class="log-meta">${r.teacher_name} · Grade ${r.grade} · ${r.subject}</div>
+      </div>
+      <div class="log-date">${formatDate(r.created_at)}</div>
+    </div>
+  `).join('') : '<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">No activity in this period</div>';
+
+  // Update name header
+  if (currentTeacher === 'all') {
+    document.getElementById('selected-name').textContent = 'All Teachers';
+    document.getElementById('selected-meta').textContent = `${total} total activities`;
+  } else {
+    const t = data.find(r=>r.teacher_id===currentTeacher);
+    const subjects = [...new Set(data.filter(r=>r.teacher_id===currentTeacher).map(r=>r.subject))];
+    document.getElementById('selected-name').textContent = t.teacher_name;
+    document.getElementById('selected-meta').textContent = `${subjects.join(', ')} · ${total} activities`;
+  }
+}
+
+function formatDate(dt) {
+  const d = new Date(dt);
+  return `${d.getDate()} Feb`;
+}
+
+// ───── SUBJECT BARS ─────
+function updateSubjectBars() {
+  const d = getFilteredData(currentFilter, currentTeacher);
+  const subj = {};
+  d.forEach(r => { subj[r.subject] = (subj[r.subject]||0)+1; });
+  const max = Math.max(...Object.values(subj), 1);
+  const sorted = Object.entries(subj).sort((a,b)=>b[1]-a[1]);
+  const colors = ['var(--accent)','var(--accent2)','var(--assessment)','var(--qp)','var(--lesson)'];
+
+  document.getElementById('subjectBars').innerHTML = sorted.map(([subj, cnt], i) => `
+    <div class="bar-item">
+      <div class="bar-label">
+        <span>${subj}</span>
+        <span style="color:${colors[i%colors.length]}">${cnt}</span>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill" style="width:${(cnt/max*100).toFixed(1)}%;background:${colors[i%colors.length]}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ───── AI INSIGHTS ─────
+function updateInsights() {
+  const d = getFilteredData(currentFilter);
+  const byTeacher = {};
+  d.forEach(r => {
+    if (!byTeacher[r.teacher_id]) byTeacher[r.teacher_id] = { name: r.teacher_name, count:0, types:{} };
+    byTeacher[r.teacher_id].count++;
+    byTeacher[r.teacher_id].types[r.activity_type] = (byTeacher[r.teacher_id].types[r.activity_type]||0)+1;
+  });
+
+  const teachers = Object.values(byTeacher).sort((a,b)=>b.count-a.count);
+  const top = teachers[0];
+  const total = d.length;
+  const quizCount = d.filter(r=>r.activity_type==='Quiz').length;
+  const lpCount = d.filter(r=>r.activity_type==='Lesson Plan').length;
+
+  const insights = [];
+  if (top) insights.push({ cls:'green', icon:'🏆', text: `<strong>${top.name}</strong> is the most active teacher with ${top.count} activities this ${currentFilter}.` });
+  if (quizCount > lpCount) insights.push({ cls:'purple', icon:'📊', text: `Quiz creation (${quizCount}) is outpacing lesson plans (${lpCount}) — teachers are focusing on assessments.` });
+  else insights.push({ cls:'purple', icon:'📝', text: `Lesson plans (${lpCount}) are leading this period with ${total} total activities across all teachers.` });
+  if (teachers.length > 1) {
+    const least = teachers[teachers.length-1];
+    insights.push({ cls:'pink', icon:'⚠️', text: `<strong>${least.name}</strong> has the lowest activity (${least.count}). Consider a check-in to support them.` });
+  }
+
+  document.getElementById('insightList').innerHTML = insights.map(i => `
+    <div class="insight-item ${i.cls}">
+      <span class="insight-icon">${i.icon}</span>
+      <span>${i.text}</span>
+    </div>
+  `).join('');
+}
+
+// ───── CHART ─────
+let chartInstance = null;
+
+function buildChartData() {
+  // Get days in current view
+  const days = [];
+  const labelMap = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(refDate);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const label = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+    days.push({ key, label });
+    labelMap[key] = days.length - 1;
+  }
+
+  const d = getFilteredData(currentFilter, currentTeacher);
+  const types = ['Lesson Plan','Quiz','Assessment','Question Paper'];
+  const colors = ['rgba(110,231,183,0.8)','rgba(129,140,248,0.8)','rgba(249,168,212,0.8)','rgba(251,191,36,0.8)'];
+  const fills = ['rgba(110,231,183,0.1)','rgba(129,140,248,0.1)','rgba(249,168,212,0.1)','rgba(251,191,36,0.1)'];
+
+  const datasets = types.map((type,i) => {
+    const counts = new Array(days.length).fill(0);
+    d.filter(r=>r.activity_type===type).forEach(r => {
+      const key = r.created_at.slice(0,10);
+      if (labelMap[key] !== undefined) counts[labelMap[key]]++;
+    });
+    return {
+      label: type,
+      data: counts,
+      borderColor: colors[i],
+      backgroundColor: fills[i],
+      borderWidth: 2,
+      pointBackgroundColor: colors[i],
+      pointRadius: 4,
+      tension: 0.4,
+      fill: true,
+    };
+  });
+
+  return { labels: days.map(d=>d.label), datasets };
+}
+
+function renderChart() {
+  const canvas = document.getElementById('activityChart');
+  const ctx = canvas.getContext('2d');
+
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  const chartData = buildChartData();
+
+  // Manual chart drawing
+  const wrap = canvas.parentElement;
+  canvas.width = wrap.clientWidth;
+  canvas.height = 200;
+  const W = canvas.width, H = canvas.height;
+  const PAD = { top: 15, right: 20, bottom: 30, left: 30 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  ctx.clearRect(0,0,W,H);
+
+  const allVals = chartData.datasets.flatMap(ds=>ds.data);
+  const maxVal = Math.max(...allVals, 1);
+
+  const labels = chartData.labels;
+  const xStep = cW / (labels.length - 1);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = PAD.top + cH - (i/4)*cH;
+    ctx.beginPath();
+    ctx.moveTo(PAD.left, y);
+    ctx.lineTo(PAD.left + cW, y);
+    ctx.stroke();
+    ctx.fillStyle = '#4b5563';
+    ctx.font = '10px DM Sans, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round((i/4)*maxVal), PAD.left-6, y+3);
+  }
+
+  // X labels
+  ctx.fillStyle = '#4b5563';
+  ctx.font = '10px DM Sans, sans-serif';
+  ctx.textAlign = 'center';
+  labels.forEach((lbl,i) => {
+    ctx.fillText(lbl, PAD.left + i*xStep, H - 6);
+  });
+
+  // Draw datasets
+  chartData.datasets.forEach(ds => {
+    const pts = ds.data.map((v,i)=>({
+      x: PAD.left + i*xStep,
+      y: PAD.top + cH - (v/maxVal)*cH
+    }));
+
+    // Fill
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, PAD.top+cH);
+    pts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(pts[pts.length-1].x, PAD.top+cH);
+    ctx.closePath();
+    ctx.fillStyle = ds.backgroundColor;
+    ctx.fill();
+
+    // Line (smooth via bezier)
+    ctx.beginPath();
+    ctx.strokeStyle = ds.borderColor;
+    ctx.lineWidth = ds.borderWidth;
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) {
+      const cpx = (pts[i-1].x + pts[i].x) / 2;
+      ctx.bezierCurveTo(cpx, pts[i-1].y, cpx, pts[i].y, pts[i].x, pts[i].y);
+    }
+    ctx.stroke();
+
+    // Dots
+    pts.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+      ctx.fillStyle = ds.borderColor;
+      ctx.fill();
+    });
+  });
+}
+
+// ───── CONTROLLERS ─────
+function setTimeFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.time-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  refresh();
+}
+
+function selectTeacher(id) {
+  currentTeacher = id;
+  document.getElementById('teacherSelect').value = id;
+  document.querySelectorAll('.teacher-row').forEach(r=>r.classList.remove('selected'));
+  refresh();
+}
+
+function refresh() {
+  updateStats();
+  updateTeacherList();
+  updateTeacherDetail();
+  updateSubjectBars();
+  updateInsights();
+  renderChart();
+}
+
+// Init
+window.addEventListener('load', () => {
+  refresh();
+  window.addEventListener('resize', () => renderChart());
+});
+</script>
+</body>
+</html>
