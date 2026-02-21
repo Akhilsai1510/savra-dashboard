@@ -116,6 +116,4 @@ Fields used:
 
 ---
 
-## Submission
 
-Built for Savra's Founding Full-Stack Engineer Intern — Round 2 Technical Assignment.
